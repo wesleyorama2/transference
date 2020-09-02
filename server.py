@@ -22,6 +22,7 @@ class ClientThread(threading.Thread):
         self.port = port
         self.socket = socket
         logging.info(f'New thread started for {ip}:{port}')
+        self.run()
 
     def run(self):
         # We'll add to this tally as we send() bytes, and subtract from
@@ -73,6 +74,7 @@ class ClientThread(threading.Thread):
                     # update the progress bar
                     progress.update(len(bytes_read))
 
+
  # device's IP address
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 5001
@@ -90,6 +92,9 @@ s = socket.socket()
 # bind the socket to our local address
 s.bind((SERVER_HOST, SERVER_PORT))
 
+# enabling our server to accept connections
+# 5 here is the number of unaccepted connections that
+# the system will allow before refusing new connections
 
 threads = []
 
@@ -97,16 +102,10 @@ format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=format, level=logging.INFO,
                     datefmt="%H:%M:%S")
 
-while True:
-    # enabling our server to accept connections
-    # 5 here is the number of unaccepted connections that
-    # the system will allow before refusing new connections
-    s.listen(5)
-    logging.info("Listening for incoming connections...")
-    (clientsock, (ip, port)) = s.accept()
-    newthread = ClientThread(ip, port, clientsock)
-    newthread.start()
-    threads.append(newthread)
+s.listen(5)
+logging.info("Listening for incoming connections...")
+(clientsock, (ip, port)) = s.accept()
 
-for t in threads:
-    t.join()
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    executor.submit(ClientThread(ip, port, clientsock))
