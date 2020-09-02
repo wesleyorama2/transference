@@ -20,7 +20,7 @@ class ClientThread(threading.Thread):
         threading.Thread.__init__(self)
         self.ip = ip
         self.port = port
-        self.socket = socket
+        self.clientsock = clientsock
         logging.info(f'New thread started for {ip}:{port}')
         self.run()
 
@@ -31,6 +31,8 @@ class ClientThread(threading.Thread):
         prevTime = None
         # if below code is executed, that means the sender is connected
         logging.info(f"{ip}:{port} is connected.")
+        self.clientsock.sendall(float(1.0).hex().encode("UTF-8"))
+        self.clientsock.sendall(float(1.0).hex().encode("UTF-8"))
         # receive the file infos
         # receive using client socket, not server socket
         received = clientsock.recv(BUFFER_SIZE).decode()
@@ -63,8 +65,8 @@ class ClientThread(threading.Thread):
                     if (len(bytes_read) > 0):
                         bytesAheadOfSchedule += len(bytes_read)
                         if (bytesAheadOfSchedule > 0):
-                            time.sleep(self.ConvertBytesToSeconds(
-                                bytesAheadOfSchedule))
+                            self.clientsock.sendall(self.ConvertBytesToSeconds(
+                                bytesAheadOfSchedule).hex().encode("UTF-8"))
                     if not bytes_read:
                         # nothing is received
                         # file transmitting is done
@@ -73,7 +75,6 @@ class ClientThread(threading.Thread):
                     f.write(bytes_read)
                     # update the progress bar
                     progress.update(len(bytes_read))
-
 
  # device's IP address
 SERVER_HOST = "0.0.0.0"
@@ -91,12 +92,6 @@ s = socket.socket()
 
 # bind the socket to our local address
 s.bind((SERVER_HOST, SERVER_PORT))
-
-# enabling our server to accept connections
-# 5 here is the number of unaccepted connections that
-# the system will allow before refusing new connections
-
-threads = []
 
 format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=format, level=logging.INFO,
