@@ -11,6 +11,8 @@ class Sender ():
         # create the client socket
         self.s = socket.socket()
         logging.info(f'initalized sender')
+        logging.info(f'using host: {self.host}')
+        logging.info(f'using port: {self.port}')
 
     def send_file(self, filename):
         # get the file size
@@ -43,19 +45,15 @@ class Sender ():
         self.s.close()
 
 
-
-# the ip address or hostname of the server, the receiver
-host = "127.0.0.1"
-# the port, let's use 5001
-port = 5001
+# # the ip address or hostname of the server, the receiver
+# host = "127.0.0.1"
+# # the port, let's use 5001
+# port = 5001
 
 
 SEPARATOR = "<SEPARATOR>"
 BUFFER_SIZE = 4096  # send 4096 bytes each time step
 
-format = "%(asctime)s: %(message)s"
-logging.basicConfig(format=format, level=logging.INFO,
-                    datefmt="%H:%M:%S")
 
 # Figure this out
 # with Sender(host, port) as s:
