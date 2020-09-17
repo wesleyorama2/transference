@@ -11,7 +11,7 @@ setup(
     author='Man Foo',
     author_email='foomail@foo.com',
     packages=['transference'],  # same as name
-    install_requires=['tqdm'],  # external packages as dependencies
+    install_requires=['tqdm', 'absl-py'],  # external packages as dependencies
     scripts=[
         'receiver/receiver.py',
         'sender/sender.py',

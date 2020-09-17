@@ -10,7 +10,7 @@ class Sender ():
         self.port = port
         # create the client socket
         self.s = socket.socket()
-        logging.info(f'initalized sender')
+        logging.info('initalized sender')
         logging.info(f'using host: {self.host}')
         logging.info(f'using port: {self.port}')
 

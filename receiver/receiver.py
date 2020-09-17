@@ -62,17 +62,9 @@ class Receiver(threading.Thread):
             with open(filename, "wb") as f:
                 for _ in progress:
                     now = time.time()
-                    if (prevTime != None):
-                        bytesAheadOfSchedule -= self.ConvertSecondsToBytes(
-                            now-prevTime)
                     prevTime = now
                     # read 1024 bytes from the socket (receive)
                     bytes_read = self.clientsock.recv(BUFFER_SIZE)
-                    if (len(bytes_read) > 0):
-                        bytesAheadOfSchedule += len(bytes_read)
-                        if (bytesAheadOfSchedule > 0):
-                            time.sleep(self.ConvertBytesToSeconds(
-                                bytesAheadOfSchedule))
                     if not bytes_read:
                         # nothing is received
                         # file transmitting is done
