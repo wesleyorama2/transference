@@ -3,16 +3,22 @@ import logging
 import os
 import socket
 
+from OpenSSL import crypto
+
 
 class Sender ():
-    def __init__(self, host, port):
+    def __init__(self, host, port, certs):
         self.host = host
         self.port = port
+        self.certs = certs
         # create the client socket
         self.s = socket.socket()
         logging.info('initalized sender')
         logging.info(f'using host: {self.host}')
         logging.info(f'using port: {self.port}')
+
+    def send_cert():
+        self.s.send(crypto.dump_certificate(crypto.FILETYPE_PEM, self.certs.ca_cert).encode('utf-8'))
 
     def send_file(self, filename):
         # get the file size

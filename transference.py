@@ -4,6 +4,8 @@
 
 from sender.sender import Sender
 from receiver.receiver import Receiver
+from certs.certs import certs
+from cipher.cipher import cipher
 import logging
 import socket
 import concurrent.futures
@@ -20,21 +22,28 @@ logging.basicConfig(format=format, level=logging.INFO,
 flags.DEFINE_string('ip', '127.0.0.1', 'ip of server')
 flags.DEFINE_integer('port', 5001, 'port of server')
 flags.DEFINE_string('type', 'server', 'server or client')
+flags.DEFINE_integer('keysize', 8192, 'Certificate key size for encrypted transmissions. Do not mess with this unless you know what you are doing.')
 
-def run_client(ip, port):
-    s = Sender(ip, port)
+def run_client(ip, port, certs):
+    s = Sender(ip, port, certs)
     s.send_file(input())
     pass
 
-def run_server(ip, port):
+def run_server(ip, port, certs):
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        executor.submit(Receiver(ip, port))
+        executor.submit(Receiver(ip, port, certs))
 
 def main(argv):
+    c = certs(key_size=FLAGS.keysize)
+    c.generate()
+    print(c.key)
+    print(c.cert)
+    ciph = cipher()
+    print(c.encrypt_key(ciph.key))
     if FLAGS.type == "server":
-        run_server(FLAGS.ip, FLAGS.port)
+        run_server(FLAGS.ip, FLAGS.port, certs)
     elif FLAGS.type == "client":
-        run_client(FLAGS.ip, FLAGS.port)
+        run_client(FLAGS.ip, FLAGS.port, certs)
     else:
         print("problems")
 
