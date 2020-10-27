@@ -3,7 +3,8 @@ import logging
 import os
 import socket
 
-from OpenSSL import crypto
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 
 
 class Sender ():
@@ -16,20 +17,22 @@ class Sender ():
         logging.info('initalized sender')
         logging.info(f'using host: {self.host}')
         logging.info(f'using port: {self.port}')
+        logging.info(f"Connecting to {self.host}:{self.port}")
+        self.s.connect((self.host, self.port))
+        logging.info("Client connected.")
 
-    def send_cert():
-        self.s.send(crypto.dump_certificate(crypto.FILETYPE_PEM, self.certs.ca_cert).encode('utf-8'))
+    def send_cert(self):
+        pub_key = self.certs.cert.public_bytes(serialization.Encoding.PEM)
+        cert_size = len(pub_key)
+        self.s.send(f"cert{SEPARATOR}{cert_size}{SEPARATOR}".encode())
+        self.s.sendall(pub_key)
 
     def send_file(self, filename):
         # get the file size
         filesize = os.path.getsize(filename)
 
-        logging.info(f"Connecting to {self.host}:{self.port}")
-        self.s.connect((self.host, self.port))
-        logging.info("Client connected.")
-
         # send the filename and filesize
-        self.s.send(f"{filename}{SEPARATOR}{filesize}".encode())
+        self.s.send(f"file{SEPARATOR}{filename}{SEPARATOR}{filesize}".encode())
 
         # start sending the file
         progress = tqdm.tqdm(range(

@@ -9,6 +9,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 
 class certs():
@@ -43,12 +44,25 @@ class certs():
             critical=False,
         ).sign(self.key, hashes.SHA256())
 
-    def encrypt_key(self, key):
-        return self.cert.public_key().encrypt(
-            key,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None,
-            )
+
+def encryptKey(key, pubKeyBytes):
+    pubKey = load_pem_public_key(pubKeyBytes)
+    return pubKey.encrypt(
+        key,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None,
         )
+    )
+
+
+def decryptKey(encyptedKey, privateKey):
+    return privateKey.decrypt(
+        encyptedKey,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None,
+        )
+    )

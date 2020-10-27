@@ -22,30 +22,35 @@ logging.basicConfig(format=format, level=logging.INFO,
 flags.DEFINE_string('ip', '127.0.0.1', 'ip of server')
 flags.DEFINE_integer('port', 5001, 'port of server')
 flags.DEFINE_string('type', 'server', 'server or client')
-flags.DEFINE_integer('keysize', 8192, 'Certificate key size for encrypted transmissions. Do not mess with this unless you know what you are doing.')
+flags.DEFINE_integer(
+    'keysize', 8192, 'Certificate key size for encrypted transmissions. Do not mess with this unless you know what you are doing.')
+
 
 def run_client(ip, port, certs):
     s = Sender(ip, port, certs)
-    s.send_file(input())
+    s.send_cert()
     pass
 
-def run_server(ip, port, certs):
+
+def run_server(ip, port, ciph):
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        executor.submit(Receiver(ip, port, certs))
+        executor.submit(Receiver(ip, port))
+
 
 def main(argv):
     c = certs(key_size=FLAGS.keysize)
     c.generate()
-    print(c.key)
-    print(c.cert)
+    # print(c.key)
+    # print(c.cert)
     ciph = cipher()
-    print(c.encrypt_key(ciph.key))
+    # print(c.encrypt_key(ciph.key))
     if FLAGS.type == "server":
-        run_server(FLAGS.ip, FLAGS.port, certs)
+        run_server(FLAGS.ip, FLAGS.port, ciph)
     elif FLAGS.type == "client":
-        run_client(FLAGS.ip, FLAGS.port, certs)
+        run_client(FLAGS.ip, FLAGS.port, c)
     else:
         print("problems")
+
 
 if __name__ == '__main__':
     app.run(main)

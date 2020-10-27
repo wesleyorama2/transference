@@ -1,16 +1,24 @@
 import os
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+
 class cipher():
-    def __init__(self):
-        self.key = os.urandom(32)
-        self.iv = os.urandom(16)
+    def __init__(self, key=None, iv=None):
+        if key == None:
+            self.key = os.urandom(32)
+        else:
+            self.key = key
+        if iv == None:
+            self.iv = os.urandom(16)
+        else:
+            self.iv = iv
+
         self.cipher = Cipher(algorithms.AES(self.key), modes.CBC(self.iv))
 
-    def encrypt(bytes_to_encrypt):
+    def encrypt(self, bytes_to_encrypt):
         encryptor = self.cipher.encryptor()
         return encryptor.update(bytes_to_encrypt) + encryptor.finalize()
 
-    def decrypt(bytes_to_decrypt):
+    def decrypt(self, bytes_to_decrypt):
         decryptor = self.cipher.decryptor()
-        return dectryptor.update(bytes_to_decrypt) + decryptor.finalize()
+        return decryptor.update(bytes_to_decrypt) + decryptor.finalize()
