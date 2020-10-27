@@ -29,12 +29,13 @@ flags.DEFINE_integer(
 def run_client(ip, port, certs):
     s = Sender(ip, port, certs)
     s.send_cert()
+    s.wait_for_key()
     pass
 
 
 def run_server(ip, port, ciph):
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        executor.submit(Receiver(ip, port))
+        executor.submit(Receiver(ip, port, ciph))
 
 
 def main(argv):
