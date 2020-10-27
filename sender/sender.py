@@ -27,6 +27,19 @@ class Sender ():
         self.s.send(f"cert{SEPARATOR}{cert_size}{SEPARATOR}".encode())
         self.s.sendall(pub_key)
 
+    def wait_for_key(self):
+        received = self.s.recv(BUFFER_SIZE).decode()
+        # prefix, keySize, key = received.split(SEPARATOR)
+        if prefix == "key":
+            print("not cert prefix")
+            self.clientsock.close()
+            sys.exit()
+        elif int(certsize) != len(cert):
+            print("Cert not same size as certsize")
+            self.clientsock.close()
+            sys.exit()
+        return cert
+
     def send_file(self, filename):
         # get the file size
         filesize = os.path.getsize(filename)
