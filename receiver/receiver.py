@@ -5,6 +5,7 @@ import time
 import logging
 import tqdm
 import os
+import base64
 from certs.certs import encryptKey
 
 
@@ -52,11 +53,13 @@ class Receiver(threading.Thread):
         logging.info("Listening for incoming connections...")
         cert = self.WaitForCert()
         encryptedKey = encryptKey(self.ciph.key, cert)
+        base64_key = base64.b64encode(encryptedKey)
         self.clientsock.send(
-            f"key{SEPARATOR}{len(encryptedKey)}{SEPARATOR}{encryptedKey}".encode())
+            f"key{SEPARATOR}{len(self.ciph.key)}{SEPARATOR}{base64_key.decode('UTF-8')}".encode())
         encryptedIV = encryptKey(self.ciph.iv, cert)
+        base64_iv = base64.b64encode(encryptedIV)
         self.clientsock.send(
-            f"iv{SEPARATOR}{len(encryptedIV)}{SEPARATOR}{encryptedIV}".encode())
+            f"iv{SEPARATOR}{len(self.ciph.iv)}{SEPARATOR}{base64_iv.decode('UTF-8')}".encode())
         return
         # We'll add to this tally as we send() bytes, and subtract from
         # at the schedule specified by (maxSendRateBytesPerSecond)
@@ -98,6 +101,7 @@ class Receiver(threading.Thread):
                     f.write(bytes_read)
                     # update the progress bar
                     progress.update(len(bytes_read))
+
 
  # device's IP address
 SERVER_HOST = "0.0.0.0"

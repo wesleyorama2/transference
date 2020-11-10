@@ -2,9 +2,12 @@ import tqdm
 import logging
 import os
 import socket
+import sys
+import base64
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from certs.certs import decryptKey
 
 
 class Sender ():
@@ -29,16 +32,30 @@ class Sender ():
 
     def wait_for_key(self):
         received = self.s.recv(BUFFER_SIZE).decode()
-        # prefix, keySize, key = received.split(SEPARATOR)
-        if prefix == "key":
-            print("not cert prefix")
-            self.clientsock.close()
+        prefix, keySize, key = received.split(SEPARATOR)
+        if prefix != "key":
+            print("not key prefix")
+            self.s.close()
             sys.exit()
-        elif int(certsize) != len(cert):
-            print("Cert not same size as certsize")
-            self.clientsock.close()
+        d_key = decryptKey(base64.b64decode(key), self.certs.key)
+        if int(keySize) != len(d_key):
+            self.s.close()
             sys.exit()
-        return cert
+        return key
+
+    def wait_for_iv(self):
+        received = self.s.recv(BUFFER_SIZE).decode()
+        prefix, ivSize, iv = received.split(SEPARATOR)
+        if prefix != "iv":
+            print("not iv prefix")
+            self.s.close()
+            sys.exit()
+        d_iv = decryptKey(base64.b64decode(iv), self.certs.key)
+        if int(ivSize) != len(d_iv):
+            print(f"iv {int(ivSize)} not same size as ivsize {len(d_iv)}")
+            self.s.close()
+            sys.exit()
+        return iv
 
     def send_file(self, filename):
         # get the file size
