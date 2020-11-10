@@ -15,6 +15,8 @@ class Sender ():
         self.host = host
         self.port = port
         self.certs = certs
+        self.key = None
+        self.iv = None
         # create the client socket
         self.s = socket.socket()
         logging.info('initalized sender')
@@ -30,8 +32,17 @@ class Sender ():
         self.s.send(f"cert{SEPARATOR}{cert_size}{SEPARATOR}".encode())
         self.s.sendall(pub_key)
 
+    def calculate_key_size(self, remainder):
+        i = 0
+        while i < len(remainder):
+            if remainder.startswith(f"iv{SEPARATOR}", i):
+                return i-1
+            i+=1
+        return None
+
     def wait_for_key(self):
         received = self.s.recv(BUFFER_SIZE).decode()
+<<<<<<< HEAD
         prefix, keySize, key = received.split(SEPARATOR)
         if prefix != "key":
             print("not key prefix")
@@ -56,6 +67,35 @@ class Sender ():
             self.s.close()
             sys.exit()
         return iv
+=======
+        prefix, keySize, remainder = received.split(SEPARATOR)
+        calculatedKeySize = self.calculate_key_size(remainder)
+        keySize = int(keySize)
+        if prefix != "key":
+            print("not key prefix")
+            self.s.close()
+            sys.exit()
+        elif keySize != calculatedKeySize:
+            print("incorrect key size")
+            print(f"keySize {keySize} != {calculatedKeySize}")
+            self.s.close()
+            sys.exit()
+
+        self.key = remainder[:keySize]
+
+        prefix, ivSize, self.iv = remainder[keySize:]
+        ivSize = int(ivSize)
+        if prefix != "iv":
+            print("not iv prefix")
+            self.s.close()
+            sys.exit()
+        elif ivSize != len(self.iv):
+            print("incorrect iv size")
+            self.s.close()
+            sys.exit()
+        print(self.key)
+        print(self.iv)
+>>>>>>> 2b564e7cb58c67187a864deb4c33bd04e3b0270f
 
     def send_file(self, filename):
         # get the file size
