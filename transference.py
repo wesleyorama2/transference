@@ -29,13 +29,9 @@ flags.DEFINE_integer(
 def run_client(ip, port, certs):
     s = Sender(ip, port, certs)
     s.send_cert()
-<<<<<<< HEAD
     key = s.wait_for_key()
     iv = s.wait_for_iv()
     print(f'key: {key} \n iv: {iv}')
-=======
-    s.wait_for_key()
->>>>>>> 2b564e7cb58c67187a864deb4c33bd04e3b0270f
     pass
 
 
