@@ -1,5 +1,6 @@
 import os
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
 
 
 class cipher():
@@ -16,9 +17,13 @@ class cipher():
         self.cipher = Cipher(algorithms.AES(self.key), modes.CBC(self.iv))
 
     def encrypt(self, bytes_to_encrypt):
+        padder = padding.PKCS7(algorithms.AES(self.key).block_size).padder()
+        padded_data = padder.update(bytes_to_encrypt) + padder.finalize()
         encryptor = self.cipher.encryptor()
-        return encryptor.update(bytes_to_encrypt) + encryptor.finalize()
+        return encryptor.update(padded_data) + encryptor.finalize()
 
     def decrypt(self, bytes_to_decrypt):
+        padder = padding.PKCS7(algorithms.AES(self.key).block_size).unpadder()
         decryptor = self.cipher.decryptor()
-        return decryptor.update(bytes_to_decrypt) + decryptor.finalize()
+        decrypted_data = decryptor.update(bytes_to_decrypt)
+        return padder.update(decrypted_data) + padder.finalize()

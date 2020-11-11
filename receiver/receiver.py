@@ -60,7 +60,6 @@ class Receiver(threading.Thread):
         base64_iv = base64.b64encode(encryptedIV)
         self.clientsock.send(
             f"iv{SEPARATOR}{len(self.ciph.iv)}{SEPARATOR}{base64_iv.decode('UTF-8')}".encode())
-        return
         # We'll add to this tally as we send() bytes, and subtract from
         # at the schedule specified by (maxSendRateBytesPerSecond)
         bytesAheadOfSchedule = 0
@@ -70,7 +69,7 @@ class Receiver(threading.Thread):
         # receive the file infos
         # receive using client socket, not server socket
         received = self.clientsock.recv(BUFFER_SIZE).decode()
-        filename, filesize = received.split(SEPARATOR)
+        _, filename, filesize = received.split(SEPARATOR)
         # remove absolute path if there is
         filename = f"{self.port}-{os.path.basename(filename)}"
         # convert to integer
@@ -80,11 +79,14 @@ class Receiver(threading.Thread):
         # and writing to the file stream
         if not received:
             self.clientsock.close()
+            print("not received")
             sys.exit()
         elif received == 'killsrv':
             self.clientsock.close()
+            print("killsrv")
             sys.exit()
         else:
+            print("receiving")
             progress = tqdm.tqdm(range(
                 filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
             with open(filename, "wb") as f:

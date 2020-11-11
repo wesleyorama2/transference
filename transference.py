@@ -31,7 +31,8 @@ def run_client(ip, port, certs):
     s.send_cert()
     key = s.wait_for_key()
     iv = s.wait_for_iv()
-    print(f'key: {key} \n iv: {iv}')
+    filename = input()
+    s.send_file(filename, key, iv)
     pass
 
 

@@ -8,6 +8,7 @@ import base64
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from certs.certs import decryptKey
+from cipher.cipher import cipher
 
 
 class Sender ():
@@ -67,17 +68,21 @@ class Sender ():
             sys.exit()
         return d_iv
 
-    def send_file(self, filename):
-        # get the file size
-        filesize = os.path.getsize(filename)
-
-        # send the filename and filesize
-        self.s.send(f"file{SEPARATOR}{filename}{SEPARATOR}{filesize}".encode())
-
-        # start sending the file
-        progress = tqdm.tqdm(range(
-            filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
+    def send_file(self, filename, key, iv):
         with open(filename, "rb") as f:
+
+            encypted_file = cipher(key=key, iv=iv).encrypt(f.read())
+
+            # get the file size
+            filesize = len(encypted_file)
+
+            # send the filename and filesize
+            self.s.send(
+                f"file{SEPARATOR}{filename}{SEPARATOR}{filesize}".encode())
+
+            # start sending the file
+            progress = tqdm.tqdm(range(
+                filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
             for _ in progress:
                 # read the bytes from the file
                 bytes_read = f.read(BUFFER_SIZE)
