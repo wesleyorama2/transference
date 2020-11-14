@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from certs.certs import decryptKey
 from cipher.cipher import cipher
+from time import sleep
 
 
 class Sender ():
@@ -69,31 +70,37 @@ class Sender ():
         return d_iv
 
     def send_file(self, filename, key, iv):
+        encrypted_file = ""
         with open(filename, "rb") as f:
+            encrypted_file = cipher(key=key, iv=iv).encrypt(f.read())
 
-            encypted_file = cipher(key=key, iv=iv).encrypt(f.read())
+        encoded = base64.b64encode(encrypted_file)
+        encoded = encoded.decode("UTF-8")
 
-            # get the file size
-            filesize = len(encypted_file)
+        # get the file size
+        filesize = len(encoded)
+        # send the filename and filesize
+        self.s.sendall(
+            f"file{SEPARATOR}{filename}{SEPARATOR}{filesize}{SEPARATOR}{encoded}".encode())
 
-            # send the filename and filesize
-            self.s.send(
-                f"file{SEPARATOR}{filename}{SEPARATOR}{filesize}".encode())
+        sleep(10)
+        # start sending the file
+        #progress = tqdm.tqdm(range(
+        #    filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
 
-            # start sending the file
-            progress = tqdm.tqdm(range(
-                filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
-            for _ in progress:
-                # read the bytes from the file
-                bytes_read = f.read(BUFFER_SIZE)
-                if not bytes_read:
-                    # file transmitting is done
-                    break
-                # we use sendall to assure transimission in
-                # busy networks
-                self.s.sendall(bytes_read)
-                # update the progress bar
-                progress.update(len(bytes_read))
+        #offset = 0
+        #for _ in progress:
+        #    # read the bytes from the file
+        #    bytes_read = encoded[offset:BUFFER_SIZE + offset + 1]
+        #    offset += BUFFER_SIZE + offset + 1
+        #    if not bytes_read:
+        #        # file transmitting is done
+        #        break
+        #    # we use sendall to assure transimission in
+        #    # busy networks
+        #    self.s.sendall(bytes_read)
+        #    # update the progress bar
+        #    progress.update(len(bytes_read))
 
     def __del__(self):
         self.s.close()

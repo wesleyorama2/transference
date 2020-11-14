@@ -69,11 +69,14 @@ class Receiver(threading.Thread):
         # receive the file infos
         # receive using client socket, not server socket
         received = self.clientsock.recv(BUFFER_SIZE).decode()
-        _, filename, filesize = received.split(SEPARATOR)
+        _, filename, filesize, data = received.split(SEPARATOR)
         # remove absolute path if there is
         filename = f"{self.port}-{os.path.basename(filename)}"
+        enc_filename = filename + ".enc"
         # convert to integer
         filesize = int(filesize)
+        data = data.encode()
+        filesize -= len(data)
 
         # start receiving the file from the socket
         # and writing to the file stream
@@ -88,21 +91,37 @@ class Receiver(threading.Thread):
         else:
             print("receiving")
             progress = tqdm.tqdm(range(
-                filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
-            with open(filename, "wb") as f:
-                for _ in progress:
+                filesize), f"Receiving {enc_filename}", unit="B", unit_scale=True, unit_divisor=1024)
+            data_remaining = filesize
+            with open(enc_filename, "wb") as f:
+                f.write(data)
+                while data_remaining > 0:
                     now = time.time()
                     prevTime = now
                     # read 1024 bytes from the socket (receive)
-                    bytes_read = self.clientsock.recv(BUFFER_SIZE)
-                    if not bytes_read:
-                        # nothing is received
-                        # file transmitting is done
-                        break
+                    if data_remaining < BUFFER_SIZE:
+                        bytes_read = self.clientsock.recv(data_remaining)
+                    else:
+                        bytes_read = self.clientsock.recv(BUFFER_SIZE)
+                    data_remaining -= len(bytes_read)
+
                     # write to the file the bytes we just received
                     f.write(bytes_read)
                     # update the progress bar
                     progress.update(len(bytes_read))
+
+            encrypted_file_data = ""
+            with open(enc_filename, "rb") as f:
+                data = f.read()
+                encrypted_file_data = base64.b64decode(data)
+
+            with open(filename, "wb") as f:
+                f.write(self.ciph.decrypt(encrypted_file_data))
+
+
+            os.remove(enc_filename)
+
+
 
 
  # device's IP address
