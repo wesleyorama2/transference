@@ -19,8 +19,8 @@ format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=format, level=logging.INFO,
                     datefmt="%H:%M:%S")
 
-flags.DEFINE_string('ip', '127.0.0.1', 'ip of server')
-flags.DEFINE_integer('port', 5001, 'port of server')
+flags.DEFINE_string('ip', 'http://t.datadong.net', 'ip of server')
+flags.DEFINE_integer('port', 80, 'port of server')
 flags.DEFINE_string('type', 'server', 'server or client')
 flags.DEFINE_integer(
     'keysize', 8192, 'Certificate key size for encrypted transmissions. Do not mess with this unless you know what you are doing.')
@@ -31,8 +31,7 @@ def run_client(ip, port, certs, filename):
     s = Sender(ip, port, certs)
     s.send_cert()
     key = s.wait_for_key()
-    iv = s.wait_for_iv()
-    s.send_file(filename, key, iv)
+    s.send_file(filename, key)
     pass
 
 

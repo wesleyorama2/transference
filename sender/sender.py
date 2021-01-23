@@ -1,7 +1,9 @@
 import tqdm
+import uuid
+import json
+import requests
 import logging
 import os
-import socket
 import sys
 import base64
 
@@ -19,20 +21,31 @@ class Sender ():
         self.certs = certs
         self.key = None
         self.iv = None
+        self.payload = {}
+        self.id = None
         # create the client socket
-        self.s = socket.socket()
         logging.info('initalized sender')
         logging.info(f'using host: {self.host}')
         logging.info(f'using port: {self.port}')
         logging.info(f"Connecting to {self.host}:{self.port}")
-        self.s.connect((self.host, self.port))
-        logging.info("Client connected.")
+
+    def generate_code(self):
+        print("in generate code")
+        self.id = uuid.uuid4()
+        logging.critical(
+            f"Please give this url to the person receiving the file: {self.host}/{self.id}")
 
     def send_cert(self):
+        self.generate_code()
         pub_key = self.certs.cert.public_bytes(serialization.Encoding.PEM)
         cert_size = len(pub_key)
-        self.s.send(f"cert{SEPARATOR}{cert_size}{SEPARATOR}".encode())
-        self.s.sendall(pub_key)
+        self.payload = {
+            'certSize': cert_size,
+            'pubKey': pub_key.decode("utf-8")
+        }
+        url = f'{self.host}/{self.id}-cert'
+        res = requests.post(url, data=json.dumps(self.payload))
+        print(f'send_cert res: {res.text}')
 
     def calculate_key_size(self, remainder):
         i = 0
@@ -43,73 +56,41 @@ class Sender ():
         return None
 
     def wait_for_key(self):
-        received = self.s.recv(BUFFER_SIZE).decode()
-        prefix, keySize, key = received.split(SEPARATOR)
-        if prefix != "key":
-            print("not key prefix")
-            self.s.close()
-            sys.exit()
-        d_key = decryptKey(base64.b64decode(key), self.certs.key)
-        if int(keySize) != len(d_key):
-            self.s.close()
-            sys.exit()
-        return d_key
+        data = requests.get(f'{self.host}/{self.id}-key')
+        payload = data.json()
 
-    def wait_for_iv(self):
-        received = self.s.recv(BUFFER_SIZE).decode()
-        prefix, ivSize, iv = received.split(SEPARATOR)
-        if prefix != "iv":
-            print("not iv prefix")
-            self.s.close()
+        if "encryptedKeySize" not in payload and "key" not in payload:
+            print("key payload keys invalid")
             sys.exit()
-        d_iv = decryptKey(base64.b64decode(iv), self.certs.key)
-        if int(ivSize) != len(d_iv):
-            print(f"iv {int(ivSize)} not same size as ivsize {len(d_iv)}")
-            self.s.close()
+        elif int(payload["encryptedKeySize"]) != len(base64.b64decode(payload["key"])):
+            print("key not same size as keysize")
             sys.exit()
-        return d_iv
+        if "encryptedIVSize" not in payload and "iv" not in payload:
+            print("iv payload keys invalid")
+            sys.exit()
+        elif int(payload["encryptedIVSize"]) != len(base64.b64decode(payload["iv"])):
+            print("iv not same size as ivsize")
+            sys.exit()
+        return {'key': decryptKey(base64.b64decode(payload["key"]), self.certs.key), 'iv': decryptKey(base64.b64decode(payload["iv"]), self.certs.key)}
 
-    def send_file(self, filename, key, iv):
+    def send_file(self, filename, key):
         encrypted_file = ""
         with open(filename, "rb") as f:
-            encrypted_file = cipher(key=key, iv=iv).encrypt(f.read())
+            encrypted_file = cipher(
+                key=key["key"], iv=key["iv"]).encrypt(f.read())
 
         encoded = base64.b64encode(encrypted_file)
         encoded = encoded.decode("UTF-8")
 
         # get the file size
         filesize = len(encoded)
-        # send the filename and filesize
-        self.s.sendall(
-            f"file{SEPARATOR}{filename}{SEPARATOR}{filesize}{SEPARATOR}{encoded}".encode())
-
-        sleep(10)
-        # start sending the file
-        #progress = tqdm.tqdm(range(
-        #    filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
-
-        #offset = 0
-        #for _ in progress:
-        #    # read the bytes from the file
-        #    bytes_read = encoded[offset:BUFFER_SIZE + offset + 1]
-        #    offset += BUFFER_SIZE + offset + 1
-        #    if not bytes_read:
-        #        # file transmitting is done
-        #        break
-        #    # we use sendall to assure transimission in
-        #    # busy networks
-        #    self.s.sendall(bytes_read)
-        #    # update the progress bar
-        #    progress.update(len(bytes_read))
-
-    def __del__(self):
-        self.s.close()
-
-
-# # the ip address or hostname of the server, the receiver
-# host = "127.0.0.1"
-# # the port, let's use 5001
-# port = 5001
+        self.payload = {
+            'filesize': filesize,
+            'filename': filename,
+            'file': encoded
+        }
+        url = f'{self.host}/{self.id}'
+        _ = requests.post(url, data=json.dumps(self.payload))
 
 
 SEPARATOR = "<SEPARATOR>"
